@@ -1,0 +1,316 @@
+from pygame import mixer
+from tkinter import *
+from tkinter import Listbox, Tk
+from tkinter import Label
+from tkinter import Button
+from tkinter import filedialog
+import random
+import time
+from mutagen.mp3 import MP3
+from PIL import ImageTk,Image
+
+"""To know the state of music,if playing or paused"""
+status=1  
+current_volume =0.5        
+"""Play function"""
+def play():
+    global song_title_label
+    filepath = filedialog.askopenfilenames(initialdir="C:\\Users\\RohanMajhi\\MusicPlayerPython\\Songs\\",
+                                          title="Select Songs to Add",filetypes=(("mp3 Files","*.mp3"),))
+    """Adding name of songs to the list"""
+    for song in filepath:
+        """Replacing so that only song name gets inserted in the list"""
+        song=song.replace("C:/Users/Rohan Majhi/Music Player Python/Songs/","")
+        songs_list.insert(END,song)
+
+    """Adding location to complete the address"""
+    current_song = "C:/Users/Rohan Majhi/Music Player Python/Songs/" + songs_list.get(0)
+
+    """Activating the first song of the list initially"""
+    songs_list.activate(0)
+    songs_list.selection_set(0,last=None)
+
+    try:      
+        song_title= current_song.split("/")                     #Can use split or replace
+        song_title=song_title[-1]
+        song_title_label.config(text="PLAYING: "+str(song_title),fg="black")
+        mixer.music.load(current_song)
+        mixer.music.set_volume(current_volume)
+        mixer.music.play()
+        timer()
+    except:
+        print("error")
+        song_title_label.config(text="NO TRACK....Please Select a Song")
+    
+       
+
+"""VOLUME FUNCTIONS"""
+def vol_dec():
+    global current_volume
+    global volume_label
+    """condition"""
+    if(current_volume<=0):
+       volume_label.config(text="Volume: ZERO",fg="lightcoral")
+       return
+    """else part"""
+    current_volume=current_volume-0.1
+    current_volume =round(current_volume,1)
+    mixer.music.set_volume(current_volume)   
+    volume_label.config(text="Volume: "+str(current_volume),fg="gold",bg="olive")
+
+def vol_up():
+    global volume_label
+    global current_volume
+    if(current_volume>=1):
+       volume_label.config(text="Volume: MAX",fg="lightcoral")
+       return
+    """else part"""
+    current_volume = current_volume + 0.1
+    current_volume =round(current_volume,1)
+    mixer.music.set_volume(current_volume)  
+    volume_label.config(text="Volume: "+str(current_volume),fg="gold",bg="olive") 
+
+"""PLAY PAUSE Function"""
+def set():
+    global status
+    global play_button
+    global pause_button
+    if(status==1):
+      mixer.music.pause()
+      status=0
+      play_button.config(image=play_button_img,text="PLAY")
+    else:
+      """Resuming the song"""
+      mixer.music.unpause()
+      status=1    
+      play_button.config(image=pause_button_img,text="PAUSE")
+
+
+"""Forward funtion"""
+def next_song():
+    rootpath="C:/Users/Rohan Majhi/Music Player Python/Songs/"
+    try:
+        """Grabbing the position of current song """
+        next_one= songs_list.curselection()
+        """Moving forward"""
+        next_one=next_one[0]+1
+        temp = songs_list.get(next_one)
+        """Playing the new song"""
+        mixer.music.stop()
+        mixer.music.load(rootpath + temp)
+        mixer.music.play()
+        """clearing the previous selction"""
+        songs_list.selection_clear(0,END)
+        """Generates underline for next one"""
+        songs_list.activate(next_one)
+        """Setting the new song as our selection"""
+        songs_list.selection_set(next_one,last=None)
+        """Changing the song label to new song"""
+        song_title_label.config(text="PLAYING: "+ str(temp),fg="black")
+    except:
+        songs_list.selection_clear(0,END)
+        songs_list.activate(0)
+        songs_list.selection_set(0,last=None)
+        mixer.music.load(rootpath + songs_list.get(0))
+        mixer.music.play()
+        song_title_label.config(text="PLAYING: "+ str(songs_list.get(0)),fg="black")
+
+"""Previous song Function"""
+def previous_song():
+    try:    
+        rootpath="C:/Users/Rohan Majhi/Music Player Python/Songs/"
+        """Grabbing the position of current song """
+        prev_one= songs_list.curselection()
+        """Moving backward """
+        prev_one=prev_one[0]-1
+        temp = songs_list.get(prev_one)
+        mixer.music.stop()
+        mixer.music.load(rootpath + temp)
+        mixer.music.play()
+        songs_list.selection_clear(0,END)
+        songs_list.activate(prev_one)
+        songs_list.selection_set(prev_one,last=None)
+        song_title_label.config(text="PLAYING: "+ str(temp),fg="black")
+    except:   
+        print("error")
+        song_title_label.config(text="You have reached the end",fg="red") 
+
+def shuffle_song():
+        """Getting the last index to set the range"""
+        num = songs_list.index(END)
+        """Generating a random number between 0 and last"""
+        x=random.randint(0,num+1)
+        """Storing the address of song in temp"""
+        temp="C:/Users/Rohan Majhi/Music Player Python/Songs/" + songs_list.get(x)
+
+        mixer.music.load(temp)
+        mixer.music.play()
+        """Clearing the previous selection"""
+        songs_list.selection_clear(0,END)
+        """Setting the pointer to currently playing song"""
+        songs_list.activate(x)
+        songs_list.selection_set(x,last=None)
+        """Updating the song name on screen"""
+        song_title_label.config(text="PLAYING: "+ str(songs_list.get(x)),fg="black")
+
+"""Delete function"""
+def delete_song_from_list():
+   """deleting the highlighted thing known as Anchor"""
+   songs_list.delete(ANCHOR)   
+   """Stop song if playing"""
+   mixer.music.stop()
+
+"""Selecting song to play from list function"""
+def select_song_from_list():
+    try:
+        rootpath="C:/Users/Rohan Majhi/Music Player Python/Songs/"
+        """getting the current position(selected)"""
+        temp=songs_list.get(ANCHOR)
+        song_title_label.config(text="PLAYING: "+ str(temp),fg="black")
+        mixer.music.stop()
+        mixer.music.load(rootpath+temp )
+        mixer.music.play()
+    except:
+        print("error")
+        song_title_label.config(text="No Track Selected")
+           
+def timer():
+    global songs_list
+    curr_time = mixer.music.get_pos()/1000
+    converted=time.strftime('%M:%S',time.gmtime(curr_time))
+    
+    """For song length"""
+    song_num = songs_list.curselection()
+    play_name  = songs_list.get(song_num)
+    load= MP3("C:/Users/Rohan Majhi/Music Player Python/Songs/"+ play_name)
+    length=load.info.length
+    converted_len = time.strftime('%M:%S',time.gmtime(length))
+    song_len.config(text="Time Elapsed: " + converted + " of :" + converted_len,fg="black")
+    
+
+    """Repeating calling this function after every 1 second(1000 ms)"""
+    song_len.after(1000,timer)
+    """Checking if the song is completed then shift to next one"""
+    if (converted==converted_len):
+        next_song()
+
+
+
+window =Tk()
+'''created main window'''
+
+window.title("MUSIC PLAYER")
+'''adding Logo to player'''
+window.minsize(width=700,height=475)
+window.maxsize(width=700,height=475)
+'''this will set minimum size of window'''
+
+window.iconbitmap("C:\\Users\\Rohan Majhi\\Music Player Python\\Images\\icons8-music-player-64.png")
+'''THIS IS USED TO GIVE LOGO TO THE FILE.HERE ICO IS IMAGE EXTENSION STAND FOR ICON TYPE IMAGE'''
+
+"""intializing pygame"""
+mixer.init()
+
+"""defining BG Image for Labelframe"""
+bg_img=ImageTk.PhotoImage(Image.open("C:\\Users\\Rohan Majhi\\Music Player Python\\Images\\bg.png").resize((428,375),Image.LANCZOS))
+
+"""creating frame for Track area"""
+Track_area=LabelFrame(font=("times new roman",15,"bold"),bg="cyan",bd=2,relief=GROOVE)
+Track_area.configure(width=430,height=378)
+Track_area.grid(row=0,column=0,padx=5,sticky="nw")
+
+canvas_=Canvas(Track_area,width=428,height=378)
+canvas_.pack(fill="both",expand=True)
+"""setting img to canvas"""
+canvas_.create_image(0,0,image=bg_img,anchor="nw")
+
+
+"""creating frame for  list area"""
+list_area=LabelFrame(text=("PLAYLIST"),font=("times new roman",15,"bold"),bg="blue",bd=2)
+list_area.configure(width=265,height=380)
+list_area.grid(row=0,column=1,padx=5)
+
+
+"""creating scrollbox and list box for song"""
+"""scrollbar"""
+scrollbar=Scrollbar(list_area,orient=VERTICAL)
+scrollbar.grid(row=0,column=1,padx=1,rowspan=5,sticky="ns")
+
+"""Creating list using list box"""
+songs_list=Listbox(list_area,bg="white",selectmode=SINGLE,selectforeground="cyan",yscrollcommand=scrollbar,fg="black",width=41,height=22)
+songs_list.grid(row=0,column=0)
+
+window.columnconfigure(0, weight=1)
+window.columnconfigure(1, weight=1)
+
+control_area=LabelFrame(font=("times new roman",15,"bold"),bg="white",bd=2)
+control_area.configure(width=790,height=104,borderwidth=0)
+control_area.grid(row=1,column=0,padx=2,pady=4,columnspan=2)
+
+"""To display song length"""
+song_len = Label(text="Song Length")
+song_len.grid(row=0,column=0,sticky="sw",padx=10,pady=11)
+
+"""To display Song Name"""
+song_title_label =Label(window,text="Song name",bg="aliceblue",width=50)
+song_title_label.grid(row=0,column=0,sticky="nw",pady=20,padx=20)
+
+"""To display dynamic volume"""
+volume_label= Label(window,text="Volume : "+str(current_volume),font=("Calibri",10),fg="gold",bg="skyblue")
+volume_label.grid(row=0,column=0,padx=10,pady=9,sticky="se")
+
+
+"""creating multimedia buttons"""
+"""1play button"""
+global play_button
+play_button_img=ImageTk.PhotoImage(Image.open("C:\\Users\\Rohan Majhi\\Music Player Python\\Images\\play-button.png").resize((45,45),Image.LANCZOS))
+play_button=Button(control_area,image=play_button_img,text="Play", compound="top",borderwidth=0,command=set)
+play_button.grid(row=3,column=2,padx=5,pady=5)
+
+"""2pause"""
+pause_button_img=ImageTk.PhotoImage(Image.open("C:\\Users\\Rohan Majhi\\Music Player Python\\Images\\pause.png").resize((45,45),Image.LANCZOS))
+#pause_button=Button(control_area,image=pause_button_img,text="PAUSE", compound="top",borderwidth=0,command=set)
+#pause_button.grid(row=3,column=3,padx=5,pady=5)
+
+"""3next"""
+next_button_img=ImageTk.PhotoImage(Image.open("C:\\Users\\Rohan Majhi\\Music Player Python\\Images\\next.png").resize((45,45),Image.LANCZOS))
+next_button=Button(control_area,image=next_button_img,text="Next", compound="top",borderwidth=0,command=next_song)
+next_button.grid(row=3,column=3,padx=5,pady=5)
+
+"""4previous"""
+prev_button_img=ImageTk.PhotoImage(Image.open("C:\\Users\\Rohan Majhi\\Music Player Python\\Images\\back.png").resize((45,45),Image.LANCZOS))
+prev_button=Button(control_area,image=prev_button_img,text="Previous", compound="top",borderwidth=0,command=previous_song)
+prev_button.grid(row=3,column=1,padx=5,pady=5)
+
+"""5suffle"""
+suffle_button_img=ImageTk.PhotoImage(Image.open("C:\\Users\\Rohan Majhi\\Music Player Python\\Images\\shuffle.png").resize((45,45),Image.LANCZOS))
+suffle_button=Button(control_area,image=suffle_button_img,text="Shuffle", compound="top",borderwidth=0,command=shuffle_song)
+suffle_button.grid(row=3,column=5,padx=5,pady=5)
+
+"""6volume"""
+vol_up_button_img=ImageTk.PhotoImage(Image.open("C:\\Users\\Rohan Majhi\\Music Player Python\\Images\\volume-up.png").resize((45,45),Image.LANCZOS))
+vol_up_button=Button(control_area,image=vol_up_button_img,text="Volume +", compound="top",borderwidth=0,command=vol_up)
+vol_up_button.grid(row=3,column=4,padx=5,pady=5)
+
+vol_down_button_img=ImageTk.PhotoImage(Image.open("C:\\Users\\Rohan Majhi\\Music Player Python\\Images\\volume-down.png").resize((45,45),Image.LANCZOS))
+vol_down_button=Button(control_area,image=vol_down_button_img,text="Volume -", compound="top",borderwidth=0,command=vol_dec)
+vol_down_button.grid(row=3,column=0,padx=5,pady=5)
+
+"""button for listbox"""
+add_img=ImageTk.PhotoImage(Image.open("C:\\Users\\Rohan Majhi\\Music Player Python\\Images\\list.png").resize((45,45),Image.LANCZOS))
+add_song=Button(control_area,image=add_img,text="Add Songs",compound="top",borderwidth=0,bg="white",fg="black",command=play)
+add_song.grid(row=3,column=7,padx=5,pady=5)
+
+delete_img=ImageTk.PhotoImage(Image.open("C:\\Users\\Rohan Majhi\\Music Player Python\\Images\\DELETE.png").resize((45,45),Image.LANCZOS))
+delete_selected=Button(control_area,image=delete_img,compound="top",text="Delete Selected",borderwidth=0,bg="white",fg="black",command=delete_song_from_list)
+delete_selected.grid(row=3,column=8,padx=5,pady=5)
+
+select_button_img=ImageTk.PhotoImage(Image.open("C:\\Users\\Rohan Majhi\\Music Player Python\\Images\\icons8-play-48.png").resize((45,45),Image.LANCZOS))
+select_button=Button(control_area,image=select_button_img,text="Play Selected", compound="top",borderwidth=0,command=select_song_from_list)
+select_button.grid(row=3,column=6,padx=5,pady=5)
+
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+'''this is continuos/infinte loop because of that window is running '''
+window.mainloop()
